@@ -1,5 +1,6 @@
 import os
 import streamlit as st
+import streamlit.components.v1 as components
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
@@ -92,7 +93,7 @@ if not GEMINI_API_KEY or GEMINI_API_KEY.strip() == "" or GEMINI_API_KEY == "your
     )
 
 # ---------------------------------------------------------
-# Session State for Chat History
+# Session State for Chat History & Auto-scroll Counter
 # ---------------------------------------------------------
 if "messages" not in st.session_state:
     st.session_state.messages = [
@@ -102,27 +103,31 @@ if "messages" not in st.session_state:
         }
     ]
 
+if "answer_count" not in st.session_state:
+    st.session_state.answer_count = 0
+
 # ---------------------------------------------------------
 # Clickable Example Questions
 # ---------------------------------------------------------
-st.write("##### 💡 Try an example question:")
-col1, col2 = st.columns(2)
-col3, col4 = st.columns(2)
-
 example_prompt = None
+is_initial = len(st.session_state.messages) <= 1
 
-with col1:
-    if st.button("❓ What problem does this solve?", use_container_width=True):
-        example_prompt = "What problem does this solve?"
-with col2:
-    if st.button("⚙️ How does it work?", use_container_width=True):
-        example_prompt = "How does it work?"
-with col3:
-    if st.button("💻 What tech will you use?", use_container_width=True):
-        example_prompt = "What tech will you use?"
-with col4:
-    if st.button("🚀 What is the future scope?", use_container_width=True):
-        example_prompt = "What is the future scope?"
+with st.expander("Try an example question", expanded=is_initial):
+    col1, col2 = st.columns(2)
+    col3, col4 = st.columns(2)
+
+    with col1:
+        if st.button("❓ What problem does this solve?", use_container_width=True):
+            example_prompt = "What problem does this solve?"
+    with col2:
+        if st.button("⚙️ How does it work?", use_container_width=True):
+            example_prompt = "How does it work?"
+    with col3:
+        if st.button("💻 What tech will you use?", use_container_width=True):
+            example_prompt = "What tech will you use?"
+    with col4:
+        if st.button("🚀 What is the future scope?", use_container_width=True):
+            example_prompt = "What is the future scope?"
 
 # ---------------------------------------------------------
 # Render Existing Chat Messages
@@ -145,12 +150,16 @@ if active_prompt:
     with st.chat_message("user"):
         st.write(active_prompt)
 
+    # Place the "latest" anchor just before the newest assistant answer
+    st.markdown('<div id="latest"></div>', unsafe_allow_html=True)
+
     # 2. Check API key before attempting call
     if not GEMINI_API_KEY or GEMINI_API_KEY.strip() == "" or GEMINI_API_KEY == "your_key_here":
         warning_msg = "Cannot generate response: GEMINI_API_KEY is not set. Please add your key to `.env` or Streamlit Secrets."
         with st.chat_message("assistant"):
             st.warning(warning_msg)
         st.session_state.messages.append({"role": "assistant", "content": warning_msg})
+        st.session_state.answer_count += 1
     else:
         # 3. Generate response via Gemini API
         with st.chat_message("assistant"):
@@ -182,8 +191,28 @@ if active_prompt:
                     bot_reply = response.text if response.text else "Sorry, I couldn't generate a response."
                     st.write(bot_reply)
                     st.session_state.messages.append({"role": "assistant", "content": bot_reply})
+                    st.session_state.answer_count += 1
 
                 except Exception as e:
                     error_msg = f"⚠️ An error occurred while communicating with Gemini API: {str(e)}"
                     st.error(error_msg)
                     st.session_state.messages.append({"role": "assistant", "content": error_msg})
+                    st.session_state.answer_count += 1
+
+    # Auto-scroll to the latest assistant message (fresh script per answer via counter + 300ms delay)
+    components.html(
+        f"""
+        <script>
+        var n = {st.session_state.answer_count};
+        setTimeout(function() {{
+            try {{
+                var el = window.parent.document.getElementById("latest");
+                if (el) {{
+                    el.scrollIntoView({{behavior: "smooth", block: "start"}});
+                }}
+            }} catch (e) {{}}
+        }}, 300);
+        </script>
+        """,
+        height=0,
+    )
