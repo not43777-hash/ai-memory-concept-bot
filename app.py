@@ -9,9 +9,16 @@ from google.genai import types
 # ---------------------------------------------------------
 MODEL_NAME = "gemini-3.5-flash-lite"
 
-# Load environment variables from .env file
+# Load environment variables from .env file (local) or st.secrets (Streamlit Community Cloud)
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+if not GEMINI_API_KEY:
+    try:
+        if "GEMINI_API_KEY" in st.secrets:
+            GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
+    except Exception:
+        pass
 
 # ---------------------------------------------------------
 # Page Setup & Styling
@@ -74,10 +81,12 @@ st.info(
 if not GEMINI_API_KEY or GEMINI_API_KEY.strip() == "" or GEMINI_API_KEY == "your_key_here":
     st.error(
         "🔑 **Gemini API Key missing or invalid!**\n\n"
-        "Please follow these quick steps:\n"
-        "1. Create a `.env` file in this directory (or edit existing `.env`).\n"
-        "2. Add your key: `GEMINI_API_KEY=your_actual_api_key`\n"
-        "3. Restart the Streamlit app.\n\n"
+        "**Local setup:**\n"
+        "1. Create a `.env` file in the project directory.\n"
+        "2. Add: `GEMINI_API_KEY=your_actual_api_key`\n\n"
+        "**Streamlit Community Cloud:**\n"
+        "1. Go to your app dashboard > **Settings** > **Secrets**.\n"
+        "2. Add: `GEMINI_API_KEY = \"your_actual_api_key\"`\n\n"
         "*(You can get a free key at [Google AI Studio](https://aistudio.google.com/app/apikey))*",
         icon="🚨"
     )
@@ -138,7 +147,7 @@ if active_prompt:
 
     # 2. Check API key before attempting call
     if not GEMINI_API_KEY or GEMINI_API_KEY.strip() == "" or GEMINI_API_KEY == "your_key_here":
-        warning_msg = "Cannot generate response: GEMINI_API_KEY is not set. Please add your key to `.env`."
+        warning_msg = "Cannot generate response: GEMINI_API_KEY is not set. Please add your key to `.env` or Streamlit Secrets."
         with st.chat_message("assistant"):
             st.warning(warning_msg)
         st.session_state.messages.append({"role": "assistant", "content": warning_msg})

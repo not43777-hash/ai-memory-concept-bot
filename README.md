@@ -56,6 +56,18 @@ The application will open automatically in your browser at `http://localhost:850
 
 ---
 
+## ☁️ Deploying to Streamlit Community Cloud
+1. Push this repository to GitHub (ensure `.env` is never committed — `.gitignore` protects it).
+2. Go to [share.streamlit.io](https://share.streamlit.io) and deploy your repository (Main file path: `app.py`).
+3. In your Streamlit app dashboard, navigate to **Settings** > **Secrets**.
+4. Add your Gemini API key in TOML format:
+   ```toml
+   GEMINI_API_KEY = "your_actual_gemini_api_key"
+   ```
+5. Click **Save** — the app will detect the secret automatically and run!
+
+---
+
 ## 📁 Project Structure (6 Files Total)
 - `app.py`: Streamlit user interface and Gemini integration with configurable model variable.
 - `knowledge.md`: The verified project facts and guidelines used as the bot's source of truth.
